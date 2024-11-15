@@ -1,0 +1,65 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_IMAGE = "my-flask-app:latest"
+        DOCKER_REGISTRY = "webapp"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                echo "Checking out the code..."
+                checkout scm
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                echo "Installing dependencies..."
+                sh 'pip install -r requirements.txt'
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                echo "Running unit tests..."
+                sh 'python -m unittest discover -s tests'
+            }
+        }
+
+        stage('Dockerize') {
+            steps {
+                echo "Building Docker image..."
+                sh 'docker build -t ${DOCKER_IMAGE} .'
+            }
+        }
+
+        stage('Push to Registry') {
+            steps {
+                script {
+                    if (params.PUSH_TO_REGISTRY) {
+                        echo "Pushing Docker image to registry..."
+                        sh 'docker tag ${DOCKER_IMAGE} ${DOCKER_REGISTRY}/${DOCKER_IMAGE}'
+                        sh 'docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}'
+                    } else {
+                        echo "Skipping push to registry."
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "Cleaning up workspace..."
+            deleteDir()
+        }
+        success {
+            echo "Build succeeded!"
+        }
+        failure {
+            echo "Build failed!"
+        }
+    }
+}
