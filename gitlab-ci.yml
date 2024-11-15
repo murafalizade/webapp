@@ -1,0 +1,18 @@
+ image: docker:latest
+        services:
+          - docker:dind
+        stages:
+          - build
+- push
+        variables:
+          DOCKER\_HOST: tcp://docker:2375/
+          DOCKER\_DRIVER: overlay2
+          DOCKER\_TLS\_CERTDIR: ""
+        build\_image:
+          stage: build
+          script:
+            - docker build -t username/webapp .
+        push\_image:
+          stage: push
+          script:
+- docker login -u "$DOCKER\_USER" -p "$DOCKER\_PASS" - docker push username/webapp:latest
